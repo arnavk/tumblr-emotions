@@ -42,13 +42,16 @@ def download_im(search_query, start, end, dataset_dir, subdir='photos'):
             # Open url and convert to JPEG image
             try:
                 f = urlopen(links[i])
+                image_file = io.BytesIO(f.read())
+                im = Image.open(image_file)
+                w, h = im.size
+                # The filename is the index of the image in the dataframe
+                filename = str(i) + '.jpg'
+                new_w = min(w, 256)
+                new_h = int((1.0 * h * new_w) / w)
+                im.convert('RGB').resize((new_w, new_h)).save(os.path.join(photos_dir, filename), 'JPEG')
             except Exception:
                 continue
-            image_file = io.BytesIO(f.read())
-            im = Image.open(image_file)
-            # The filename is the index of the image in the dataframe
-            filename = str(i) + '.jpg'
-            im.convert('RGB').save(os.path.join(photos_dir, filename), 'JPEG')
 
 def download_im_with_text(search_query, start, end, dataset_dir='data', subdir='photos'):
     """Download images using the urls in the dataframe specified by the search query.

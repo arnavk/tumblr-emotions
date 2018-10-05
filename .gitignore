@@ -116,3 +116,6 @@ results/
 Thesis/
 KDD2018/
 *.ipynb
+
+# slurm
+*.out
