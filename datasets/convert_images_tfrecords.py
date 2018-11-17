@@ -159,6 +159,7 @@ def _convert_dataset(split_name, filenames, class_names_to_ids, dataset_dir,
 	sys.stdout.write('\n')
 	sys.stdout.flush()
 
+
 def _convert_dataset_with_text(split_name, filenames, class_names_to_ids, dataset_dir, df_dict,
 															 tfrecords_subdir='tfrecords'):
 	"""Converts the given filenames to a TFRecords dataset.
@@ -226,7 +227,7 @@ def _clean_up_temporary_files(dataset_dir, photos_subdir='photos'):
 	"""
 	#filename = _DATA_URL.split('/')[-1]
 	#filepath = os.path.join(dataset_dir, filename)
-	#tf.gfile.Remove(filepath)
+	# tf.gfile.Remove(filepath)
 
 	tmp_dir = os.path.join(dataset_dir, photos_subdir)
 	tf.gfile.DeleteRecursively(tmp_dir)
@@ -258,7 +259,8 @@ def convert_images(dataset_dir, num_valid, photos_subdir='photos', tfrecords_sub
 		print('Dataset files already exist. Exiting without re-creating them.')
 		return
 
-	photo_filenames, class_names = _get_filenames_and_classes(dataset_dir, photos_subdir)
+	photo_filenames, class_names = _get_filenames_and_classes(
+		dataset_dir, photos_subdir)
 	class_names_to_ids = dict(zip(class_names, range(len(class_names))))
 
 	# Divide into train and test:
@@ -274,8 +276,10 @@ def convert_images(dataset_dir, num_valid, photos_subdir='photos', tfrecords_sub
 									 dataset_dir, tfrecords_subdir)
 
 	# Write the train/validation split size
-	train_valid_split = dict(zip(['train', 'validation'], [len(photo_filenames) - num_valid, num_valid]))
-	train_valid_filename = os.path.join(dataset_dir, photos_subdir, _TRAIN_VALID_FILENAME)
+	train_valid_split = dict(
+		zip(['train', 'validation'], [len(photo_filenames) - num_valid, num_valid]))
+	train_valid_filename = os.path.join(
+		dataset_dir, photos_subdir, _TRAIN_VALID_FILENAME)
 	with tf.gfile.Open(train_valid_filename, 'w') as f:
 		for split_name in train_valid_split:
 			size = train_valid_split[split_name]
@@ -283,10 +287,12 @@ def convert_images(dataset_dir, num_valid, photos_subdir='photos', tfrecords_sub
 
 	# Finally, write the labels file:
 	labels_to_class_names = dict(zip(range(len(class_names)), class_names))
-	dataset_utils.write_label_file(labels_to_class_names, dataset_dir, photos_subdir)
+	dataset_utils.write_label_file(
+		labels_to_class_names, dataset_dir, photos_subdir)
 
 	#_clean_up_temporary_files(dataset_dir)
 	print('\nFinished converting the dataset!')
+
 
 def convert_images_with_text(dataset_dir, num_valid, photos_subdir='photos', tfrecords_subdir='tfrecords'):
 	"""Downloads the photos and convert them to TFRecords.
@@ -304,7 +310,8 @@ def convert_images_with_text(dataset_dir, num_valid, photos_subdir='photos', tfr
 		print('Dataset files already exist. Exiting without re-creating them.')
 		return
 
-	photo_filenames, class_names = _get_filenames_and_classes(dataset_dir, photos_subdir)
+	photo_filenames, class_names = _get_filenames_and_classes(
+		dataset_dir, photos_subdir)
 	class_names_to_ids = dict(zip(class_names, range(len(class_names))))
 
 	# Divide into train and test:
@@ -320,12 +327,15 @@ def convert_images_with_text(dataset_dir, num_valid, photos_subdir='photos', tfr
 	emb_dir = 'embedding_weights'
 	filename = 'glove.6B.50d.txt'
 	if emb_name == 'word2vec':
-			vocabulary, embedding = _load_embedding_weights_word2vec(text_dir, emb_dir, filename)
+		vocabulary, embedding = _load_embedding_weights_word2vec(
+			text_dir, emb_dir, filename)
 	else:
-			vocabulary, embedding = _load_embedding_weights_glove(text_dir, emb_dir, filename)
+		vocabulary, embedding = _load_embedding_weights_glove(
+			text_dir, emb_dir, filename)
 
 	for emotion in class_names:
-		df_dict[emotion] = preprocess_one_df(vocabulary, embedding, emotion, _POST_SIZE)
+		df_dict[emotion] = preprocess_one_df(
+			vocabulary, embedding, emotion, _POST_SIZE)
 
 	# First, convert the training and validation sets.
 	_convert_dataset_with_text('train', training_filenames, class_names_to_ids,
@@ -334,8 +344,10 @@ def convert_images_with_text(dataset_dir, num_valid, photos_subdir='photos', tfr
 									 dataset_dir, df_dict, tfrecords_subdir)
 
 	# Write the train/validation split size
-	train_valid_split = dict(zip(['train', 'validation'], [len(photo_filenames) - num_valid, num_valid]))
-	train_valid_filename = os.path.join(dataset_dir, photos_subdir, _TRAIN_VALID_FILENAME)
+	train_valid_split = dict(
+		zip(['train', 'validation'], [len(photo_filenames) - num_valid, num_valid]))
+	train_valid_filename = os.path.join(
+		dataset_dir, photos_subdir, _TRAIN_VALID_FILENAME)
 	with tf.gfile.Open(train_valid_filename, 'w') as f:
 		for split_name in train_valid_split:
 			size = train_valid_split[split_name]
@@ -343,10 +355,12 @@ def convert_images_with_text(dataset_dir, num_valid, photos_subdir='photos', tfr
 
 	# Finally, write the labels file:
 	labels_to_class_names = dict(zip(range(len(class_names)), class_names))
-	dataset_utils.write_label_file(labels_to_class_names, dataset_dir, photos_subdir)
+	dataset_utils.write_label_file(
+		labels_to_class_names, dataset_dir, photos_subdir)
 
 	#_clean_up_temporary_files(dataset_dir)
 	print('\nFinished converting the dataset!')
+
 
 def _filenames_to_arrays(filenames, class_names_to_ids):
 		X = []
@@ -356,7 +370,7 @@ def _filenames_to_arrays(filenames, class_names_to_ids):
 				class_name = os.path.basename(os.path.dirname(filename))
 				class_id = class_names_to_ids[class_name]
 				# Might need different size as 224 is quite large
-				image_size = 16#inception.inception_v1.default_image_size
+				image_size = 16  # inception.inception_v1.default_image_size
 				# Resize and flatten the image
 				im = imresize(im, (image_size, image_size)).reshape(-1)
 				X.append(im)
@@ -364,6 +378,7 @@ def _filenames_to_arrays(filenames, class_names_to_ids):
 		X = np.vstack(X)
 		y = np.array(y)
 		return (X, y)
+
 
 def get_numpy_data(dataset_dir, num_valid, photos_subdir='photos'):
 	"""Convert the photos to numpy data.
@@ -378,7 +393,8 @@ def get_numpy_data(dataset_dir, num_valid, photos_subdir='photos'):
 		y_train: Training labels.
 		y_valid: Validation labels
 	"""
-	photo_filenames, class_names = _get_filenames_and_classes(dataset_dir, photos_subdir)
+	photo_filenames, class_names = _get_filenames_and_classes(
+		dataset_dir, photos_subdir)
 	class_names_to_ids = dict(zip(class_names, range(len(class_names))))
 
 	# Divide into train and test:
@@ -387,7 +403,9 @@ def get_numpy_data(dataset_dir, num_valid, photos_subdir='photos'):
 	training_filenames = photo_filenames[num_valid:]
 	validation_filenames = photo_filenames[:num_valid]
 
-	X_train, y_train = _filenames_to_arrays(training_filenames, class_names_to_ids)
-	X_valid, y_valid = _filenames_to_arrays(validation_filenames, class_names_to_ids)
+	X_train, y_train = _filenames_to_arrays(
+		training_filenames, class_names_to_ids)
+	X_valid, y_valid = _filenames_to_arrays(
+		validation_filenames, class_names_to_ids)
 
 	return (X_train, X_valid, y_train, y_valid)
