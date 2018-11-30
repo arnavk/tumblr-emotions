@@ -1,4 +1,4 @@
-""" Fine-tune a pre-trained Inception model by chopping off the last logits layer. 
+""" Fine-tune a pre-trained Inception model by chopping off the last logits layer.
 """
 import os
 import sys
@@ -36,8 +36,8 @@ def download_pretrained_model(url, checkpoint_dir):
     dataset_utils.download_and_uncompress_tarball(url, checkpoint_dir)
 
 def _load_batch(dataset, batch_size=32, shuffle=True, height=299, width=299, is_training=False):
-    """Load a single batch of data. 
-    
+    """Load a single batch of data.
+
     Args:
       dataset: The dataset to load.
       batch_size: The number of images in the batch.
@@ -45,7 +45,7 @@ def _load_batch(dataset, batch_size=32, shuffle=True, height=299, width=299, is_
       height: The size of each image after preprocessing.
       width: The size of each image after preprocessing.
       is_training: Whether or not we're currently training or evaluating.
-    
+
     Returns:
       images: A Tensor of size [batch_size, height, width, 3], image samples that have been preprocessed.
       images_raw: A Tensor of size [batch_size, height, width, 3], image samples that can be used for visualization.
@@ -57,7 +57,7 @@ def _load_batch(dataset, batch_size=32, shuffle=True, height=299, width=299, is_
         dataset, shuffle=shuffle, common_queue_capacity=batch_size,
         common_queue_min=8)
     image_raw, label = data_provider.get(['image', 'label'])
-    
+
     # Preprocess image for usage by Inception.
     image = inception_preprocessing.preprocess_image(image_raw, height, width, is_training=is_training)
 
@@ -72,12 +72,12 @@ def _load_batch(dataset, batch_size=32, shuffle=True, height=299, width=299, is_
         batch_size=batch_size,
         num_threads=1,
         capacity=2 * batch_size)
-    
+
     return images, images_raw, labels
 
 def load_batch_with_text(dataset, batch_size=32, shuffle=True, height=299, width=299, is_training=False):
-    """Load a single batch of data. 
-    
+    """Load a single batch of data.
+
     Args:
       dataset: The dataset to load.
       batch_size: The number of images in the batch.
@@ -85,7 +85,7 @@ def load_batch_with_text(dataset, batch_size=32, shuffle=True, height=299, width
       height: The size of each image after preprocessing.
       width: The size of each image after preprocessing.
       is_training: Whether or not we're currently training or evaluating.
-    
+
     Returns:
       images: A Tensor of size [batch_size, height, width, 3], image samples that have been preprocessed.
       images_raw: A Tensor of size [batch_size, height, width, 3], image samples that can be used for visualization.
@@ -97,7 +97,7 @@ def load_batch_with_text(dataset, batch_size=32, shuffle=True, height=299, width
         dataset, shuffle=shuffle, common_queue_capacity=batch_size,
         common_queue_min=8)
     image_raw, text, seq_len, label, post_id, day = data_provider.get(['image', 'text', 'seq_len', 'label', 'post_id', 'day'])
-    
+
     # Preprocess image for usage by Inception.
     image = inception_preprocessing.preprocess_image(image_raw, height, width, is_training=is_training)
 
@@ -112,14 +112,14 @@ def load_batch_with_text(dataset, batch_size=32, shuffle=True, height=299, width
         batch_size=batch_size,
         num_threads=1,
         capacity=2 * batch_size)
-    
-    return images, images_raw, texts, seq_lens, labels, post_ids, days 
+
+    return images, images_raw, texts, seq_lens, labels, post_ids, days
 
 def get_init_fn(checkpoints_dir, model_name='inception_v1.ckpt'):
     """Returns a function run by the chief worker to warm-start the training.
     """
     checkpoint_exclude_scopes=["InceptionV1/Logits", "InceptionV1/AuxLogits"]
-    
+
     exclusions = [scope.strip() for scope in checkpoint_exclude_scopes]
 
     variables_to_restore = []
@@ -153,9 +153,9 @@ class ImageModel():
 
         self.dataset = get_split_with_text(mode, dataset_dir)
         image_size = inception_v1.default_image_size
-        images, _, texts, seq_lens, self.labels, _, _ = load_batch_with_text(self.dataset, batch_size, height=image_size, 
+        images, _, texts, seq_lens, self.labels, _, _ = load_batch_with_text(self.dataset, batch_size, height=image_size,
                                                                              width=image_size)
-            
+
         self.nb_emotions = self.dataset.num_classes
         # Create the model, use the default arg scope to configure the batch norm parameters.
         is_training = (mode == 'train')
@@ -187,7 +187,7 @@ def train_image_model(checkpoints_dir, train_dir, num_steps):
         # Use tensorboard --logdir=train_dir, careful with path (add Documents/tumblr-sentiment in front of train_dir)
         # Different from the logs, because computed on different mini batch of data
         tf.summary.scalar('Loss', total_loss)
-      
+
         # Specify the optimizer and create the train op:
         optimizer = tf.train.AdamOptimizer(learning_rate=model.learning_rate)
         train_op = slim.learning.create_train_op(total_loss, optimizer)
@@ -205,10 +205,10 @@ def train_image_model(checkpoints_dir, train_dir, num_steps):
                 train_step_fn.epoch += 1
 
             total_loss, should_stop = train_step(session, *args, **kwargs)
-            
+
             train_step_fn.step += 1
             return [total_loss, should_stop]
-        
+
         train_step_fn.step = 0
         train_step_fn.epoch = 0
 
@@ -221,12 +221,12 @@ def train_image_model(checkpoints_dir, train_dir, num_steps):
             save_summaries_secs=600,
             train_step_fn=train_step_fn,
             number_of_steps=num_steps)
-            
+
     print('Finished training. Last batch loss {0:.3f}'.format(final_loss))
 
 def evaluate_image_model(checkpoint_dir, log_dir, mode, num_evals):
     """Visualise results with: tensorboard --logdir=logdir. Now has train/validation curves on the same plot
-    
+
     Parameters:
         checkpoint_dir: Checkpoint of the saved model during training.
         log_dir: Directory to save logs.
