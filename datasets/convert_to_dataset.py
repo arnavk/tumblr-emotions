@@ -117,7 +117,7 @@ def get_split(split_name, dataset_dir, photos_subdir='photos', tfrecords_subdir=
 			labels_to_names=labels_to_names)
 
 
-def get_split_with_text(split_name, dataset_dir, photos_subdir='photos', tfrecords_subdir='tfrecords',
+def get_split_with_text(split_name, dataset_dir, photos_subdir='photos', tfrecords_subdir=None,
 							file_pattern=None, reader=None):
 	"""Gets a dataset tuple with instructions for reading tumblr data.
 

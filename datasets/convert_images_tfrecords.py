@@ -19,28 +19,25 @@ one for train and one for validation. Each TFRecord dataset is comprised of a se
 of TF-Example protocol buffers, each of which contain a single image and label.
 
 """
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
 import math
 import os
 import random
 import sys
+from datetime import datetime
 
 import numpy as np
+import pandas as pd
 import tensorflow as tf
-
 from scipy.misc import imread, imresize
-from datetime import datetime
-from slim.nets import inception
+
 from datasets import dataset_utils
-from text_model.text_preprocessing import preprocess_one_df
-from text_model.text_preprocessing import _load_embedding_weights_glove, _load_embedding_weights_word2vec
+from text_model.text_preprocessing import preprocess_one_df, _load_embedding_weights_glove, _load_embedding_weights_word2vec
+
 
 # The number of images in the validation set.
-#_NUM_VALIDATION = 50
+# _NUM_VALIDATION = 50
 
 # Seed for repeatability.
 _RANDOM_SEED = 0
@@ -75,7 +72,7 @@ class ImageReader(object):
 		return image
 
 
-def _get_filenames_and_classes(dataset_dir, photos_subdir='photos'):
+def __get_filenames_and_classes(dataset_dir, photos_subdir='photos'):
 	"""Returns a list of filenames and inferred class names.
 
 	Parameters:
@@ -105,6 +102,27 @@ def _get_filenames_and_classes(dataset_dir, photos_subdir='photos'):
 				photo_filenames.append(path)
 
 	return photo_filenames, sorted(class_names)
+
+
+def _get_filenames_and_classes(
+		dataset_dir, photos_subdir='photos', full_list=None):
+
+	# import pdb; pdb.set_trace()
+	print("getting file names")
+	df = pd.read_csv(
+		os.path.join(dataset_dir, full_list), encoding='utf-8')
+	df_filenames = df['img_file_name']
+	df_classes = df['search_query']
+	classes = sorted(list(set(df_classes.values)))
+
+	filenames = list(map(
+		lambda x: os.path.join(dataset_dir, photos_subdir, x[0], x[1]),
+		list(zip(df_classes.values, df_filenames))
+	))
+
+	filenames = list(filter(tf.gfile.Exists, filenames))
+	print("returning filenames", len(filenames))
+	return filenames, classes
 
 
 def _get_dataset_filename(dataset_dir, photos_subdir, split_name, shard_id):
@@ -160,6 +178,16 @@ def _convert_dataset(split_name, filenames, class_names_to_ids, dataset_dir,
 	sys.stdout.flush()
 
 
+def get_index(df_dict, filename):
+	base = os.path.basename(filename)
+	indices = df_dict.index[df_dict['img_file_name'] == str(filename)].tolist()
+
+	if len(indices) == 0:
+		return -1
+
+	return indices[0]
+
+
 def _convert_dataset_with_text(split_name, filenames, class_names_to_ids, dataset_dir, df_dict,
 															 tfrecords_subdir='tfrecords'):
 	"""Converts the given filenames to a TFRecords dataset.
@@ -201,7 +229,9 @@ def _convert_dataset_with_text(split_name, filenames, class_names_to_ids, datase
 
 						# Get index of the post
 						base = os.path.basename(filenames[i])
-						index = (int)(os.path.splitext(base)[0])
+						index = get_index(df_dict[class_name], base)
+						if index == -1:
+							continue
 						text_data = df_dict[class_name].iloc[index]['text_list']
 						seq_len = df_dict[class_name].iloc[index]['text_len']
 						post_id = df_dict[class_name].iloc[index]['id']
@@ -311,12 +341,13 @@ def convert_images_with_text(dataset_dir, num_valid, photos_subdir='photos', tfr
 		return
 
 	photo_filenames, class_names = _get_filenames_and_classes(
-		dataset_dir, photos_subdir)
+		dataset_dir, photos_subdir, full_list='shuffled_test.csv')
 	class_names_to_ids = dict(zip(class_names, range(len(class_names))))
 
 	# Divide into train and test:
 	random.seed(_RANDOM_SEED)
 	random.shuffle(photo_filenames)
+
 	training_filenames = photo_filenames[num_valid:]
 	validation_filenames = photo_filenames[:num_valid]
 
